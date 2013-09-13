@@ -20,6 +20,7 @@
 #include <getopt.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <errno.h>
 
 #pragma pack(1)
@@ -117,8 +118,76 @@ int main(int argc, char *argv[])
   }
   else if((sb.st_mode & S_IFMT) == S_IFDIR)
   {
-   printf ("Input directory: %s\n", fname);
-	// assume its a dir
+   printf ("Input directory: %s\n",	 fname);
+   struct dirent **namelist;
+   int n, i = 0;
+
+   n = scandir(fname, &namelist, NULL, alphasort);
+    if (n < 0) 
+	{
+        printf("No files in directory\n");
+		exit(EXIT_FAILURE);
+    }
+	else 
+	{
+		FILE * out = fopen("logo.bin","wb");
+		if(!out)
+		{
+			printf("Error: Cannot create logo.bin file!\n");
+			exit(EXIT_FAILURE);	
+		}
+        while (n--) 
+		{
+		if (!strcmp(namelist[n]->d_name, ".") || !strcmp(namelist[n]->d_name, "..")) continue;
+
+			char szPath[255] = {0};
+			if(fname[strlen(fname)] != '/' && fname[strlen(fname)] != '\\') 
+				sprintf(&szPath, "%s\\%s", fname, namelist[n]->d_name);
+			else
+				sprintf(&szPath, "%s%s", fname, namelist[n]->d_name);
+			FILE * fadd = fopen(szPath, "rb");
+			if(!fadd)
+			{
+			        printf("Error: Cannot open file!\n");
+					exit(EXIT_FAILURE);	
+			}
+			if(strstr(namelist[n]->d_name, ".bmp")) namelist[n]->d_name[strlen(namelist[n]->d_name)-4] = 0;	
+			
+			fseek (fadd , 0 , SEEK_END);
+			int s = ftell (fadd);
+			rewind (fadd);
+			char * data  = malloc(s);
+			
+			printf("-> Packing: '%s' -> '%s' : %d b\n", szPath, namelist[n]->d_name, s);
+			
+			fread(data, s, 1, fadd);
+			
+			int pos = ftell(out);
+			//Create AML header
+			struct AMLLogoHeader ah = {0};
+			ah.magic = 0x27051956;
+			ah.fileindex = 0x0B00 + i;
+			strcpy(ah.filename,namelist[n]->d_name);
+			ah.address = pos + sizeof(struct AMLLogoHeader);
+			ah.filesize = s;
+			ah.nextlogofile = ah.address + ah.filesize;
+			int padding = (ah.nextlogofile % 16);
+			ah.nextlogofile += padding;
+			
+			fwrite(&ah,sizeof(struct AMLLogoHeader), 1, out);
+			fwrite(data, s, 1, out);
+			char pad[16] = {0};
+			// Write padding
+			fwrite(pad,padding,1,out);
+			
+			free(data);
+            free(namelist[n]);
+			fclose(fadd);
+			++i;
+        }
+		fclose(out);
+        free(namelist);
+    }
   }
   else
   {
