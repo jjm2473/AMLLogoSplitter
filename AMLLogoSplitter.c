@@ -66,8 +66,8 @@ int main(int argc, char *argv[])
 	
     if (stat(argv[1], &sb) == -1) 
 	{
-     		printf("File or directory doesn't exists!\n");
-			exit(EXIT_FAILURE);
+		printf("File or directory doesn't exists!\n");
+		exit(EXIT_FAILURE);
 	}
 	
     if ((sb.st_mode & S_IFMT) == S_IFREG)
@@ -103,14 +103,18 @@ int main(int argc, char *argv[])
 	fread(file,amlh.filesize,1,f);
 	
 	char outfile[36] = {0};
-	if(file[0] == 'B' && file[1] == 'M') sprintf(outfile,"./out/%s.bmp",amlh.filename);
-	else  sprintf(outfile,"./out/%s",amlh.filename);
+	if(file[0] == 'B' && file[1] == 'M') 
+		sprintf(outfile,"./out/%s.bmp",amlh.filename);
+	else 
+		sprintf(outfile,"./out/%s",amlh.filename);
 	
 	FILE * e = fopen(outfile,"wb");
 	fwrite(file,amlh.filesize,1,e);
 	fclose(e);
 	free(file);
-	if(!amlh.nextlogofile) break;
+	
+	if(!amlh.nextlogofile) 
+		break;
 	fseek(f, amlh.nextlogofile, SEEK_SET);
 	}
 	
@@ -123,42 +127,43 @@ int main(int argc, char *argv[])
    int n, i = 0;
 
    n = scandir(fname, &namelist, NULL, alphasort);
-    if (n < 0) 
-	{
+   if (n < 0) 
+   {
         printf("No files in directory\n");
 		exit(EXIT_FAILURE);
-    }
-	else 
-	{
+   }
+   else 
+   {
 		FILE * out = fopen("logo.bin","wb");
 		if(!out)
 		{
 			printf("Error: Cannot create logo.bin file!\n");
 			exit(EXIT_FAILURE);	
 		}
-        while (n--) 
+        while (--n) 
 		{
 		if (!strcmp(namelist[n]->d_name, ".") || !strcmp(namelist[n]->d_name, "..")) continue;
 
 			char szPath[255] = {0};
 			if(fname[strlen(fname)] != '/' && fname[strlen(fname)] != '\\') 
-				sprintf(&szPath, "%s\\%s", fname, namelist[n]->d_name);
+				sprintf(szPath, "%s\\%s", fname, namelist[n]->d_name);
 			else
-				sprintf(&szPath, "%s%s", fname, namelist[n]->d_name);
+				sprintf(szPath, "%s%s", fname, namelist[n]->d_name);
 			FILE * fadd = fopen(szPath, "rb");
 			if(!fadd)
 			{
-			        printf("Error: Cannot open file!\n");
-					exit(EXIT_FAILURE);	
+				printf("Error: Cannot open file!\n");
+				exit(EXIT_FAILURE);	
 			}
-			if(strstr(namelist[n]->d_name, ".bmp")) namelist[n]->d_name[strlen(namelist[n]->d_name)-4] = 0;	
+			if(strstr(namelist[n]->d_name, ".bmp")) 
+				namelist[n]->d_name[strlen(namelist[n]->d_name)-4] = 0;	
 			
 			fseek (fadd , 0 , SEEK_END);
 			int s = ftell (fadd);
 			rewind (fadd);
 			char * data  = malloc(s);
 			
-			printf("-> Packing: '%s' -> '%s' : %d b\n", szPath, namelist[n]->d_name, s);
+			printf("-> Packing: %d. '%s' -> '%s' : %d b\n", n, szPath, namelist[n]->d_name, s);
 			
 			fread(data, s, 1, fadd);
 			
@@ -170,15 +175,17 @@ int main(int argc, char *argv[])
 			strcpy(ah.filename,namelist[n]->d_name);
 			ah.address = pos + sizeof(struct AMLLogoHeader);
 			ah.filesize = s;
-			ah.nextlogofile = ah.address + ah.filesize;
 			int padding = 16 - (ah.filesize % 16);
-			ah.nextlogofile += padding;
-			
+			if(n>2)
+			{
+				ah.nextlogofile = ah.address + ah.filesize;
+				ah.nextlogofile += padding;
+			}
 			fwrite(&ah,sizeof(struct AMLLogoHeader), 1, out);
+			// Write padding
 			fwrite(data, s, 1, out);
 			char pad[16] = {0};
-			// Write padding
-			printf("-> Writing %d padding bytes\n", padding);
+			//printf("-> Writing %d padding bytes\n", padding);
 			fwrite(pad,padding,1,out);
 			
 			free(data);
@@ -195,7 +202,6 @@ int main(int argc, char *argv[])
 	printf ("File isn't file or directory!\n");
 	exit(EXIT_FAILURE);
   }
-	
 	
 	printf("-->Done.\n");
 	return EXIT_SUCCESS;
