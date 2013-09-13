@@ -171,13 +171,14 @@ int main(int argc, char *argv[])
 			ah.address = pos + sizeof(struct AMLLogoHeader);
 			ah.filesize = s;
 			ah.nextlogofile = ah.address + ah.filesize;
-			int padding = (ah.nextlogofile % 16);
+			int padding = 16 - (ah.filesize % 16);
 			ah.nextlogofile += padding;
 			
 			fwrite(&ah,sizeof(struct AMLLogoHeader), 1, out);
 			fwrite(data, s, 1, out);
 			char pad[16] = {0};
 			// Write padding
+			printf("-> Writing %d padding bytes\n", padding);
 			fwrite(pad,padding,1,out);
 			
 			free(data);
