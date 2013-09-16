@@ -20,8 +20,14 @@
 #include <getopt.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <dirent.h>
 #include <errno.h>
+#if defined _WIN32 || defined _WIN64
+#include "scandirw32.h"
+#else
+#include <dirent.h>
+#endif
+
+
 
 #pragma pack(1)
 
@@ -55,7 +61,7 @@ int main(int argc, char *argv[])
 	struct stat sb = {0};
 	
 	printf("===========================================\n"
-		   "AMLogic Images Splitter v. 0.1 by lolet\n"
+		   "AMLogic Images Splitter v. 1.0 by lolet\n"
 		   "===========================================\n");
 		
 	if (argc != 2 )
@@ -86,7 +92,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 		
+#if defined  _WIN32 || defined _WIN64
+	mkdir("out");
+#else
 	mkdir("out", 777);
+#endif
 	while(!feof(f))
 	{
 	struct AMLLogoHeader amlh = {0};
