@@ -21,12 +21,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
-#if defined _WIN32 || defined _WIN64
-#include "scandirw32.h"
-#else
-#include <dirent.h>
-#endif
-
+#include "scandir.h"
 
 
 #pragma pack(1)
